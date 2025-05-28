@@ -1,0 +1,343 @@
+<style>
+  /* Modern Reset */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    line-height: 1.5;
+  }
+
+  /* Navbar */
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2563eb;
+    text-decoration: none;
+  }
+
+  .nav-icons {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .notifications, .profile {
+    position: relative;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+
+  .notifications:hover, .profile:hover {
+    background-color: #f1f5f9;
+  }
+
+  .notifications svg, .profile svg {
+    width: 24px;
+    height: 24px;
+    fill: #64748b;
+  }
+
+  .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 2px solid white;
+  }
+
+  .profile-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    min-width: 200px;
+    overflow: hidden;
+  }
+
+  .profile-active .profile-dropdown {
+    display: block;
+  }
+
+  .profile-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #475569;
+    text-decoration: none;
+    transition: background-color 0.2s;
+  }
+
+  .profile-dropdown a:hover {
+    background: #f8fafc;
+    color: #2563eb;
+  }
+
+  /* Main Content */
+  main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #334155;
+    margin: 2rem 0 1rem;
+  }
+
+  /* Exam Cards */
+  .exam {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .exam:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  }
+
+  .exam h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+  }
+
+  .exam p {
+    color: #64748b;
+    margin-bottom: 1rem;
+  }
+
+  .exam-info {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .exam-info small {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+
+  .exam-info small::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background: #94a3b8;
+    border-radius: 50%;
+  }
+
+  .exam-info small:first-child::before {
+    display: none;
+  }
+
+  /* Buttons */
+  .take-exam-btn, .continue-btn, .view-result-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .take-exam-btn {
+    background: #2563eb;
+    color: white;
+  }
+
+  .take-exam-btn:hover {
+    background: #1d4ed8;
+  }
+
+  .continue-btn {
+    background: #f59e0b;
+    color: white;
+  }
+
+  .continue-btn:hover {
+    background: #d97706;
+  }
+
+  .view-result-btn {
+    background: #10b981;
+    color: white;
+  }
+
+  .view-result-btn:hover {
+    background: #059669;
+  }
+
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 600px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .modal h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #64748b;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+
+  .close-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+
+  #markAllReadBtn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 1.5rem;
+  }
+
+  #markAllReadBtn:hover {
+    background: #1d4ed8;
+  }
+
+  .notification-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .notification-item.unread {
+    background-color: #eff6ff;
+    border-left: 4px solid #2563eb;
+  }
+
+  .notification-item.read {
+    background-color: #f8fafc;
+  }
+
+  .notification-item:hover {
+    background-color: #f1f5f9;
+  }
+
+  .notification-item h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+  }
+
+  .notification-item p {
+    color: #64748b;
+    margin-bottom: 0.5rem;
+  }
+
+  .notification-item small {
+    color: #94a3b8;
+    font-size: 0.875rem;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .navbar {
+      padding: 1rem;
+    }
+
+    main {
+      padding: 0 1rem;
+    }
+
+    .exam-info {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .modal-content {
+      margin: 10% 1rem;
+      padding: 1.5rem;
+    }
+  }
+</style>
