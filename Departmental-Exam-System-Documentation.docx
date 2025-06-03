@@ -1,0 +1,207 @@
+BSIT EXAMINATION SYSTEM DOCUMENTATION
+
+1. Login and Registration System Implementation
+-------------------------------------------
+The system implements a dual login system for both students and admins:
+
+```php
+// Login Process
+if (isset($_POST['action']) && $_POST['action'] === 'login') {
+    $email_or_username = trim($_POST['email_or_username']);
+    $password = $_POST['password'];
+
+    // Student login check
+    $stmt = $conn->prepare("SELECT id, password FROM students WHERE email = ?");
+    $stmt->bind_param("s", $email_or_username);
+    $stmt->execute();
+    
+    // Admin login check
+    $stmt = $conn->prepare("SELECT id, password, role FROM admins WHERE username = ?");
+    $stmt->bind_param("s", $email_or_username);
+    $stmt->execute();
+}
+```
+
+2. Exam Timer Implementation
+--------------------------
+The exam timer is implemented using JavaScript:
+
+```javascript
+// Timer functionality
+let duration = <?php echo $exam['duration_minutes']; ?> * 60; // Convert to seconds
+const timerDisplay = document.getElementById('time');
+
+const timerInterval = setInterval(() => {
+    duration--;
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (duration <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('examForm').submit();
+    }
+}, 1000);
+```
+
+3. Form Validation
+----------------
+Both client-side and server-side validation are implemented:
+
+Client-side:
+```html
+<input type="email" name="email" required 
+       class="w-full px-3 py-2 border border-gray-300 rounded-md">
+```
+
+Server-side:
+```php
+if (empty($title) || $duration <= 0 || empty($due_date)) {
+    $error = "Please enter a valid title, duration, and due date.";
+}
+```
+
+4. Dynamic Question Display
+-------------------------
+Questions are displayed dynamically using PHP and HTML:
+
+```php
+<?php 
+$question_num = 1;
+while ($question = $questions_result->fetch_assoc()): 
+?>
+<div class="question mb-6">
+    <h3>Question <?php echo $question_num; ?>:</h3>
+    <p><?php echo nl2br(htmlspecialchars($question['question_text'])); ?></p>
+    <div class="options">
+        <label>
+            <input type="radio" name="answer[<?php echo $question['id']; ?>]" value="A">
+            <?php echo htmlspecialchars($question['option_a']); ?>
+        </label>
+        <!-- Other options -->
+    </div>
+</div>
+<?php 
+$question_num++;
+endwhile; 
+?>
+```
+
+5. Leaderboard/Ranking Generation
+-------------------------------
+The system uses a view in the database to generate rankings:
+
+```sql
+CREATE VIEW exam_rankings AS 
+SELECT exam_id, student_id, score, 
+       rank() over (partition by exam_id order by score desc) as rank 
+FROM exam_attempts;
+```
+
+6. Session Usage
+--------------
+Sessions are used throughout the application:
+
+```php
+session_start();
+if (!isset($_SESSION['student_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+```
+
+7. Database Schema
+----------------
+Key tables in the database:
+
+```sql
+CREATE TABLE students (
+    id INT PRIMARY KEY,
+    full_name VARCHAR(100),
+    email VARCHAR(100),
+    password VARCHAR(255),
+    year_level ENUM('1st Year','2nd Year','3rd Year','4th Year'),
+    section ENUM('A','B','C','D','E'),
+    department VARCHAR(255)
+);
+
+CREATE TABLE exams (
+    id INT PRIMARY KEY,
+    title VARCHAR(100),
+    description TEXT,
+    duration_minutes INT,
+    due_date DATE,
+    created_by INT
+);
+
+CREATE TABLE questions (
+    id INT PRIMARY KEY,
+    exam_id INT,
+    question_text TEXT,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_option ENUM('A','B','C','D')
+);
+```
+
+8. Password Storage
+-----------------
+Passwords are securely hashed using PHP's password_hash():
+
+```php
+$password = password_hash($password_raw, PASSWORD_BCRYPT);
+```
+
+9. User-Exam Results Relationship
+-------------------------------
+The relationship is maintained through the exam_attempts table:
+
+```sql
+CREATE TABLE exam_attempts (
+    id INT PRIMARY KEY,
+    student_id INT,
+    exam_id INT,
+    score FLOAT,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+```
+
+10. Multiple Choice Questions
+--------------------------
+Multiple choice questions are stored in the questions table with options and correct answer:
+
+```sql
+CREATE TABLE questions (
+    id INT PRIMARY KEY,
+    exam_id INT,
+    question_text TEXT,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_option ENUM('A','B','C','D')
+);
+```
+
+11. SQL Queries for Answer Evaluation
+---------------------------------
+The system uses prepared statements to fetch and evaluate answers:
+
+```php
+$questions_sql = "SELECT id, correct_option FROM questions WHERE exam_id = ?";
+$questions_stmt = $conn->prepare($questions_sql);
+$questions_stmt->bind_param("i", $exam_id);
+$questions_stmt->execute();
+
+while ($question = $questions_result->fetch_assoc()) {
+    if (isset($answers[$question['id']]) && 
+        $answers[$question['id']] === $question['correct_option']) {
+        $score++;
+    }
+}
+```
+
+This implementation provides a secure and efficient examination system with proper validation, session management, and database relationships. 

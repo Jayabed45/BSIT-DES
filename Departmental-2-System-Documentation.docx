@@ -1,0 +1,185 @@
+BSIT EXAMINATION SYSTEM DOCUMENTATION
+
+[Previous content remains the same...]
+
+12. Main Database Tables and Relationships
+---------------------------------------
+The system uses several interconnected tables to manage the examination process:
+
+```sql
+-- Students Table
+CREATE TABLE students (
+    id INT PRIMARY KEY,
+    full_name VARCHAR(100),
+    email VARCHAR(100),
+    password VARCHAR(255),
+    year_level ENUM('1st Year','2nd Year','3rd Year','4th Year'),
+    section ENUM('A','B','C','D','E'),
+    department VARCHAR(255)
+);
+
+-- Exams Table
+CREATE TABLE exams (
+    id INT PRIMARY KEY,
+    title VARCHAR(100),
+    description TEXT,
+    duration_minutes INT,
+    due_date DATE,
+    created_by INT,
+    FOREIGN KEY (created_by) REFERENCES admins(id)
+);
+
+-- Questions Table
+CREATE TABLE questions (
+    id INT PRIMARY KEY,
+    exam_id INT,
+    question_text TEXT,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_option ENUM('A','B','C','D'),
+    FOREIGN KEY (exam_id) REFERENCES exams(id)
+);
+
+-- Exam Attempts Table
+CREATE TABLE exam_attempts (
+    id INT PRIMARY KEY,
+    student_id INT,
+    exam_id INT,
+    score FLOAT,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (exam_id) REFERENCES exams(id)
+);
+```
+
+Key Relationships:
+- Students can take multiple exams (one-to-many)
+- Each exam can have multiple questions (one-to-many)
+- Each exam attempt is linked to one student and one exam
+- Questions are linked to specific exams
+
+13. Anti-Cheating Measures
+------------------------
+The system implements several measures to prevent cheating:
+
+1. Session Management:
+```php
+session_start();
+if (!isset($_SESSION['student_id'])) {
+    header('Location: ../login.php');
+    exit;
+}
+```
+
+2. Exam Timer:
+```javascript
+const timerInterval = setInterval(() => {
+    duration--;
+    if (duration <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('examForm').submit();
+    }
+}, 1000);
+```
+
+3. Prevention of Multiple Attempts:
+```php
+$attempt_sql = "SELECT * FROM exam_attempts WHERE student_id = ? AND exam_id = ?";
+$attempt_stmt = $conn->prepare($attempt_sql);
+$attempt_stmt->bind_param("ii", $student_id, $exam_id);
+$attempt_stmt->execute();
+if ($attempt_result->num_rows > 0) {
+    die("You have already taken this exam.");
+}
+```
+
+4. Browser Navigation Prevention:
+```javascript
+window.onbeforeunload = function() {
+    return "Are you sure you want to leave? Your progress will be lost.";
+};
+```
+
+14. Exam Questions and Answers Storage
+-----------------------------------
+Questions and answers are stored and evaluated as follows:
+
+1. Question Storage:
+```sql
+CREATE TABLE questions (
+    id INT PRIMARY KEY,
+    exam_id INT,
+    question_text TEXT,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_option ENUM('A','B','C','D')
+);
+```
+
+2. Answer Evaluation:
+```php
+$questions_sql = "SELECT id, correct_option FROM questions WHERE exam_id = ?";
+$questions_stmt = $conn->prepare($questions_sql);
+$questions_stmt->bind_param("i", $exam_id);
+$questions_stmt->execute();
+
+while ($question = $questions_result->fetch_assoc()) {
+    if (isset($answers[$question['id']]) && 
+        $answers[$question['id']] === $question['correct_option']) {
+        $score++;
+    }
+}
+```
+
+15. Possible Improvements and Future Features
+------------------------------------------
+1. Enhanced Security:
+   - Implement two-factor authentication
+   - Add IP tracking for exam attempts
+   - Implement browser lockdown during exams
+
+2. Question Types:
+   - Add support for multiple question types (essay, matching, etc.)
+   - Implement image upload for questions
+   - Add support for mathematical equations
+
+3. Analytics and Reporting:
+   - Detailed performance analytics
+   - Question difficulty analysis
+   - Student progress tracking
+   - Export reports in various formats
+
+4. User Experience:
+   - Mobile-responsive design improvements
+   - Real-time auto-save of answers
+   - Progress indicators during exams
+   - Better navigation between questions
+
+5. Administrative Features:
+   - Bulk question import/export
+   - Question bank management
+   - Advanced exam scheduling
+   - Custom grading rubrics
+
+6. Integration Features:
+   - LMS integration
+   - API for external systems
+   - Single Sign-On (SSO) support
+   - Calendar integration for exam schedules
+
+7. Accessibility:
+   - Screen reader support
+   - High contrast mode
+   - Keyboard navigation
+   - Font size adjustments
+
+8. Performance:
+   - Caching implementation
+   - Database optimization
+   - Load balancing for high traffic
+   - CDN integration for static assets 
