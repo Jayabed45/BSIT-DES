@@ -172,10 +172,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <div class="relative max-w-6xl mx-auto text-center z-10">
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 drop-shadow-md">
-                BSIT Departmental Examination System
+                Departmental Examination System
             </h1>
             <p class="text-lg sm:text-xl opacity-95 mb-10 max-w-3xl mx-auto leading-relaxed">
-                An efficient and secure platform designed to streamline departmental exams for BSIT students and administrators.
+                An efficient and secure platform designed to streamline departmental exams for students. 
             </p>
             <div class="space-x-4">
                  <button id="getStartedBtn" class="bg-white text-blue-600 hover:bg-gray-200 px-10 py-4 rounded-full text-lg font-semibold shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl">Get Started</button>
