@@ -9,6 +9,29 @@ if (!isset($_SESSION['student_id'])) {
 
 $student_id = $_SESSION['student_id'];
 
+// Define departments array based on the database
+$departments = [
+    'Bachelor of Science in Information Technology',
+    'College of Engineering'
+];
+
+// Define year levels based on the database enum
+$year_levels = [
+    '1st Year',
+    '2nd Year',
+    '3rd Year',
+    '4th Year'
+];
+
+// Define sections based on the database enum
+$sections = [
+    'A',
+    'B',
+    'C',
+    'D',
+    'E'
+];
+
 // Fetch student information
 $stmt = $conn->prepare("
     SELECT * FROM students WHERE id = ?
@@ -28,61 +51,73 @@ $success_message = '';
 $error_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $current_password = $_POST['current_password'] ?? '';
-    $new_password = $_POST['new_password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
+    if (isset($_POST['action']) && $_POST['action'] === 'update_profile') {
+        $full_name = filter_input(INPUT_POST, 'full_name', FILTER_SANITIZE_STRING);
+        $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+        $department = filter_input(INPUT_POST, 'department', FILTER_SANITIZE_STRING);
+        $year_level = filter_input(INPUT_POST, 'year_level', FILTER_SANITIZE_STRING);
+        $section = filter_input(INPUT_POST, 'section', FILTER_SANITIZE_STRING);
 
-    if (!empty($current_password)) {
-        // Verify current password
-        $verify_stmt = $conn->prepare("SELECT password FROM students WHERE id = ?");
-        if ($verify_stmt === false) {
-            die("Error preparing statement: " . $conn->error);
-        }
-        
-        $verify_stmt->bind_param("i", $student_id);
-        $verify_stmt->execute();
-        $verify_result = $verify_stmt->get_result();
-        $stored_password = $verify_result->fetch_assoc()['password'];
+        $update_stmt = $conn->prepare("
+            UPDATE students 
+            SET full_name = ?, email = ?, department = ?, year_level = ?, section = ?
+            WHERE id = ?
+        ");
 
-        if (password_verify($current_password, $stored_password)) {
-            if ($new_password === $confirm_password) {
-                // Update password
-                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                $update_stmt = $conn->prepare("UPDATE students SET password = ? WHERE id = ?");
-                if ($update_stmt === false) {
-                    die("Error preparing statement: " . $conn->error);
-                }
-                
-                $update_stmt->bind_param("si", $hashed_password, $student_id);
-                
-                if ($update_stmt->execute()) {
-                    $success_message = "Password updated successfully!";
-                } else {
-                    $error_message = "Failed to update password.";
-                }
-            } else {
-                $error_message = "New passwords do not match.";
-            }
-        } else {
-            $error_message = "Current password is incorrect.";
-        }
-    }
-
-    // Update email if provided
-    if (!empty($email) && $email !== $student['email']) {
-        $update_stmt = $conn->prepare("UPDATE students SET email = ? WHERE id = ?");
         if ($update_stmt === false) {
             die("Error preparing statement: " . $conn->error);
         }
-        
-        $update_stmt->bind_param("si", $email, $student_id);
+
+        $update_stmt->bind_param("sssssi", $full_name, $email, $department, $year_level, $section, $_SESSION['student_id']);
         
         if ($update_stmt->execute()) {
             $success_message = "Profile updated successfully!";
-            $student['email'] = $email;
+            // Refresh student data
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $student = $result->fetch_assoc();
         } else {
-            $error_message = "Failed to update email.";
+            $error_message = "Failed to update profile.";
+        }
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'change_password') {
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (!empty($current_password)) {
+            // Verify current password
+            $verify_stmt = $conn->prepare("SELECT password FROM students WHERE id = ?");
+            if ($verify_stmt === false) {
+                die("Error preparing statement: " . $conn->error);
+            }
+            
+            $verify_stmt->bind_param("i", $student_id);
+            $verify_stmt->execute();
+            $verify_result = $verify_stmt->get_result();
+            $stored_password = $verify_result->fetch_assoc()['password'];
+
+            if (password_verify($current_password, $stored_password)) {
+                if ($new_password === $confirm_password) {
+                    // Update password
+                    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                    $update_stmt = $conn->prepare("UPDATE students SET password = ? WHERE id = ?");
+                    if ($update_stmt === false) {
+                        die("Error preparing statement: " . $conn->error);
+                    }
+                    
+                    $update_stmt->bind_param("si", $hashed_password, $student_id);
+                    
+                    if ($update_stmt->execute()) {
+                        $success_message = "Password updated successfully!";
+                    } else {
+                        $error_message = "Failed to update password.";
+                    }
+                } else {
+                    $error_message = "New passwords do not match.";
+                }
+            } else {
+                $error_message = "Current password is incorrect.";
+            }
         }
     }
 }
@@ -95,309 +130,221 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - BSIT Exam System</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
-            background: #f8fafc;
-            color: #1e293b;
-            line-height: 1.5;
         }
-
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+        .sidebar-item {
+            transition: all 0.3s ease;
         }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #2563eb;
-            text-decoration: none;
+        .sidebar-item:hover {
+            transform: translateX(5px);
         }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            color: #64748b;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .back-btn:hover {
-            background: #f1f5f9;
-            color: #1e293b;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-
-        .profile-card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-
-        .profile-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .profile-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 0.5rem;
-        }
-
-        .profile-header p {
-            color: #64748b;
-        }
-
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            font-size: 3rem;
-            font-weight: 600;
-            color: #64748b;
-        }
-
-        .profile-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .info-item {
-            background: #f8fafc;
-            padding: 1rem;
-            border-radius: 8px;
-        }
-
-        .info-item h3 {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #64748b;
-            margin-bottom: 0.5rem;
-        }
-
-        .info-item p {
-            font-size: 1.125rem;
-            font-weight: 500;
-            color: #1e293b;
-        }
-
-        .form-section {
-            background: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-
-        .form-section h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #475569;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            color: #1e293b;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-
-        .alert {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-
-        .alert-success {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
         @media (max-width: 768px) {
-            .container {
-                padding: 0 1rem;
+            .profile-container {
+                margin-top: 1rem;
             }
-
-            .profile-card {
-                padding: 1.5rem;
+            .mobile-menu {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
             }
-
-            .profile-info {
-                grid-template-columns: 1fr;
+            .mobile-menu.active {
+                transform: translateX(0);
             }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+            .overlay.active {
+                display: block;
             }
         }
     </style>
 </head>
-<body>
-    <nav class="navbar">
-        <a href="student_dashboard.php" class="logo">BSIT Exam System</a>
-        <a href="student_dashboard.php" class="back-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            Back to Dashboard
-        </a>
-    </nav>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <!-- Mobile Menu Button -->
+    <div class="lg:hidden fixed top-4 left-4 z-50">
+        <button id="mobileMenuButton" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+    </div>
 
-    <div class="container">
-        <div class="profile-card">
-            <div class="profile-header">
-                <div class="profile-avatar">
-                    <?php 
-                        $name_parts = explode(' ', $student['full_name']);
-                        $initials = '';
-                        if (count($name_parts) >= 2) {
-                            $initials = strtoupper(substr($name_parts[0], 0, 1) . substr($name_parts[count($name_parts)-1], 0, 1));
-                        } else {
-                            $initials = strtoupper(substr($student['full_name'], 0, 2));
-                        }
-                        echo $initials;
-                    ?>
+    <!-- Mobile Menu Overlay -->
+    <div id="overlay" class="overlay"></div>
+
+    <div class="flex h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <div id="mobileMenu" class="mobile-menu fixed lg:static w-64 bg-white shadow-md flex flex-col h-full z-50">
+            <div class="p-6 flex-1">
+                <div class="flex items-center space-x-3 mb-8">
+                    <i class="fas fa-graduation-cap text-2xl text-blue-600"></i>
+                    <h2 class="text-2xl font-bold text-blue-600">Student Panel</h2>
                 </div>
-                <h1><?php echo htmlspecialchars($student['full_name']); ?></h1>
-                <p>Student ID: <?php echo htmlspecialchars($student['id']); ?></p>
+                <nav class="space-y-2">
+                    <a href="student_dashboard.php" class="sidebar-item flex items-center space-x-3 text-gray-700 hover:bg-blue-100 hover:text-blue-600 p-3 rounded-lg">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="profile.php" class="sidebar-item flex items-center space-x-3 text-blue-600 bg-blue-100 p-3 rounded-lg font-semibold">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
             </div>
+            <div class="p-6 border-t border-gray-200">
+                <a href="../logout.php" class="sidebar-item flex items-center space-x-3 text-red-600 hover:bg-red-100 hover:text-red-800 p-3 rounded-lg">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
 
-            <?php if ($success_message): ?>
-                <div class="alert alert-success"><?php echo $success_message; ?></div>
-            <?php endif; ?>
-
-            <?php if ($error_message): ?>
-                <div class="alert alert-error"><?php echo $error_message; ?></div>
-            <?php endif; ?>
-
-            <div class="profile-info">
-                <div class="info-item">
-                    <h3>Department</h3>
-                    <p><?php echo htmlspecialchars($student['department']); ?></p>
+        <!-- Main Content -->
+        <div class="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div class="profile-container max-w-3xl mx-auto bg-white rounded-lg shadow-xl p-4 lg:p-8">
+                <div class="text-center mb-6 lg:mb-8">
+                    <div class="flex justify-center mb-4">
+                        <div class="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-blue-600 flex items-center justify-center text-white text-4xl lg:text-5xl font-bold">
+                            <?php echo strtoupper(substr($student['full_name'], 0, 1)); ?>
+                        </div>
+                    </div>
+                    <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 mb-2">Student Profile</h1>
+                    <p class="text-gray-600 text-sm lg:text-base">Manage your account information</p>
                 </div>
-                <div class="info-item">
-                    <h3>Year Level</h3>
-                    <p><?php echo htmlspecialchars($student['year_level']); ?></p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                    <!-- Personal Information -->
+                    <div class="bg-gray-50 rounded-lg p-4 lg:p-6">
+                        <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4">Personal Information</h2>
+                        <form action="profile.php" method="POST" class="space-y-4">
+                            <input type="hidden" name="action" value="update_profile">
+                            
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Full Name</label>
+                                <input type="text" name="full_name" value="<?php echo htmlspecialchars($student['full_name']); ?>" 
+                                       class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" name="email" value="<?php echo htmlspecialchars($student['email']); ?>" 
+                                       class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Department</label>
+                                <?php if (!empty($student['department'])): ?>
+                                    <!-- Read-only department if already set -->
+                                    <input type="text" value="<?php echo htmlspecialchars($student['department']); ?>" 
+                                           class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600 text-sm lg:text-base" 
+                                           readonly>
+                                    <input type="hidden" name="department" value="<?php echo htmlspecialchars($student['department']); ?>">
+                                <?php else: ?>
+                                    <!-- Editable department if not set -->
+                                    <select name="department" class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                                        <option value="">Select Department</option>
+                                        <?php foreach ($departments as $dept): ?>
+                                        <option value="<?php echo $dept; ?>" <?php echo $student['department'] === $dept ? 'selected' : ''; ?>>
+                                            <?php echo $dept; ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                <?php endif; ?>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Year Level</label>
+                                <select name="year_level" class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                                    <?php foreach ($year_levels as $year): ?>
+                                    <option value="<?php echo $year; ?>" <?php echo $student['year_level'] === $year ? 'selected' : ''; ?>>
+                                        <?php echo $year; ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Section</label>
+                                <select name="section" class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                                    <?php foreach ($sections as $section): ?>
+                                    <option value="<?php echo $section; ?>" <?php echo $student['section'] === $section ? 'selected' : ''; ?>>
+                                        <?php echo $section; ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="pt-4">
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 lg:px-6 py-2 lg:py-3 border border-transparent text-sm lg:text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                                    Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="bg-gray-50 rounded-lg p-4 lg:p-6">
+                        <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4">Change Password</h2>
+                        <form action="profile.php" method="POST" class="space-y-4">
+                            <input type="hidden" name="action" value="change_password">
+                            
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Current Password</label>
+                                <input type="password" name="current_password" 
+                                       class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">New Password</label>
+                                <input type="password" name="new_password" 
+                                       class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm lg:text-base font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                <input type="password" name="confirm_password" 
+                                       class="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm lg:text-base" required>
+                            </div>
+
+                            <div class="pt-4">
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 lg:px-6 py-2 lg:py-3 border border-transparent text-sm lg:text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200">
+                                    Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <h3>Section</h3>
-                    <p><?php echo htmlspecialchars($student['section']); ?></p>
+
+                <div class="mt-6 lg:mt-8 text-center">
+                    <a href="student_dashboard.php" class="inline-flex items-center px-6 lg:px-8 py-2 lg:py-3 border border-transparent text-sm lg:text-base font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-200">
+                        Return to Dashboard
+                    </a>
                 </div>
             </div>
-
-            <form method="POST" action="">
-                <div class="form-section">
-                    <h2>Update Email</h2>
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($student['email']); ?>" required>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h2>Change Password</h2>
-                    <div class="form-group">
-                        <label for="current_password">Current Password</label>
-                        <input type="password" id="current_password" name="current_password">
-                    </div>
-                    <div class="form-group">
-                        <label for="new_password">New Password</label>
-                        <input type="password" id="new_password" name="new_password">
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm New Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password">
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Update Profile</button>
-            </form>
         </div>
     </div>
+
+    <script>
+        // Add mobile menu functionality
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('overlay');
+
+        function toggleMobileMenu() {
+            mobileMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        mobileMenuButton.addEventListener('click', toggleMobileMenu);
+        overlay.addEventListener('click', toggleMobileMenu);
+    </script>
 </body>
 </html> 

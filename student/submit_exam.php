@@ -5,7 +5,7 @@ session_start();
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "bsit_exam_system";
+$dbname = "bsit_exam_system_main";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {

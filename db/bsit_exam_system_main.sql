@@ -31,7 +31,7 @@ CREATE TABLE `admins` (
   `id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin1','admin2') NOT NULL
+  `role` enum('admin1') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -39,8 +39,7 @@ CREATE TABLE `admins` (
 --
 
 INSERT INTO `admins` (`id`, `username`, `password`, `role`) VALUES
-(1, 'admin@gmail.com', '$2y$10$Q8NrK.rL5/CAD488YC25xudFIFYSA6bYNyQkGf9r97xLj9hkVO9ha', 'admin1'),
-(3, 'admin2@gmail.com', '$2y$10$JrWLt10/sTWMIRZfKP4FKeX7hZIRduqDKPV9eTlKnuYttLSiIyJqO', 'admin2');
+(1, 'admin@gmail.com', '$2y$10$Q8NrK.rL5/CAD488YC25xudFIFYSA6bYNyQkGf9r97xLj9hkVO9ha', 'admin1');
 
 -- --------------------------------------------------------
 

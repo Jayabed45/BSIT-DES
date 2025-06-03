@@ -92,558 +92,285 @@ $all_notifications = $all_notif_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Student Dashboard - BSIT Exam System</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  /* Modern Reset */
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    font-family: 'Inter', sans-serif;
-    background: #f8fafc;
-    color: #1e293b;
-    line-height: 1.5;
-  }
-
-  /* Navbar */
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #2563eb;
-    text-decoration: none;
-  }
-
-  .nav-icons {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-  }
-
-  .notifications, .profile {
-    position: relative;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-  }
-
-  .notifications:hover, .profile:hover {
-    background-color: #f1f5f9;
-  }
-
-  .notifications svg, .profile svg {
-    width: 24px;
-    height: 24px;
-    fill: #64748b;
-  }
-
-  .badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background: #ef4444;
-    color: white;
-    border-radius: 50%;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border: 2px solid white;
-  }
-
-  .profile-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    margin-top: 0.5rem;
-    background: white;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    min-width: 200px;
-    overflow: hidden;
-  }
-
-  .profile-active .profile-dropdown {
-    display: block;
-  }
-
-  .profile-dropdown a {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: #475569;
-    text-decoration: none;
-    transition: background-color 0.2s;
-  }
-
-  .profile-dropdown a:hover {
-    background: #f8fafc;
-    color: #2563eb;
-  }
-
-  /* Main Content */
-  main {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 2rem;
-  }
-
-  h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #334155;
-    margin: 2rem 0 1rem;
-  }
-
-  /* Exam Cards */
-  .exam {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .exam:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-  }
-
-  .exam h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 0.75rem;
-  }
-
-  .exam p {
-    color: #64748b;
-    margin-bottom: 1rem;
-  }
-
-  .exam-info {
-    display: flex;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .exam-info small {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #64748b;
-    font-size: 0.875rem;
-  }
-
-  .exam-info small::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    background: #94a3b8;
-    border-radius: 50%;
-  }
-
-  .exam-info small:first-child::before {
-    display: none;
-  }
-
-  /* Buttons */
-  .take-exam-btn, .continue-btn, .view-result-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-
-  .take-exam-btn {
-    background: #2563eb;
-    color: white;
-  }
-
-  .take-exam-btn:hover {
-    background: #1d4ed8;
-  }
-
-  .continue-btn {
-    background: #f59e0b;
-    color: white;
-  }
-
-  .continue-btn:hover {
-    background: #d97706;
-  }
-
-  .view-result-btn {
-    background: #10b981;
-    color: white;
-  }
-
-  .view-result-btn:hover {
-    background: #059669;
-  }
-
-  /* Modal */
-  .modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal-content {
-    background: white;
-    margin: 5% auto;
-    padding: 2rem;
-    border-radius: 16px;
-    max-width: 600px;
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-    position: relative;
-  }
-
-  .modal h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 1.5rem;
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 1.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    background: none;
-    color: #64748b;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-  }
-
-  .close-btn:hover {
-    background: #f1f5f9;
-    color: #1e293b;
-  }
-
-  #markAllReadBtn {
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    margin-bottom: 1.5rem;
-  }
-
-  #markAllReadBtn:hover {
-    background: #1d4ed8;
-  }
-
-  .notification-item {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .notification-item.unread {
-    background-color: #eff6ff;
-    border-left: 4px solid #2563eb;
-  }
-
-  .notification-item.read {
-    background-color: #f8fafc;
-  }
-
-  .notification-item:hover {
-    background-color: #f1f5f9;
-  }
-
-  .notification-item h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
-  }
-
-  .notification-item p {
-    color: #64748b;
-    margin-bottom: 0.5rem;
-  }
-
-  .notification-item small {
-    color: #94a3b8;
-    font-size: 0.875rem;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .navbar {
-      padding: 1rem;
-    }
-
-    main {
-      padding: 0 1rem;
-    }
-
-    .exam-info {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .modal-content {
-      margin: 10% 1rem;
-      padding: 1.5rem;
-    }
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Dashboard - BSIT Exam System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        .sidebar-item:hover {
+            transform: translateX(5px);
+        }
+        @media (max-width: 768px) {
+            .mobile-menu {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+            .mobile-menu.active {
+                transform: translateX(0);
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
 </head>
-<body>
-
-<nav class="navbar">
-  <div class="logo">BSIT Exam System</div>
-  <div class="nav-icons">
-    <div class="notifications" title="Notifications" id="notificationBell" tabindex="0" aria-label="Notifications">
-      <svg viewBox="0 0 24 24" aria-hidden="true" role="img">
-        <path d="M12 24c1.104 0 2-.897 2-2h-4c0 1.103.896 2 2 2zm6.707-5l1.293-1.293-1.414-1.414L17 17.586V10c0-3.07-1.64-5.64-4.5-6.32V3a1.5 1.5 0 0 0-3 0v.68C7.64 4.36 6 6.93 6 10v7.586l-1.586 1.586-1.414-1.414L5.293 19H18.707z"></path>
-      </svg>
-      <?php if ($unread_count > 0): ?>
-        <span class="badge"><?php echo $unread_count; ?></span>
-      <?php endif; ?>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+    <!-- Mobile Menu Button -->
+    <div class="lg:hidden fixed top-4 left-4 z-50">
+        <button id="mobileMenuButton" class="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
     </div>
-    <div class="profile" title="Profile" id="profileIcon" tabindex="0" aria-label="User Profile">
-      <svg viewBox="0 0 24 24" aria-hidden="true" role="img">
-        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
-      </svg>
-      <div class="profile-dropdown" id="profileDropdown">
-        <a href="profile.php">Profile</a>
-        <a href="../logout.php">Logout</a>
-      </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="overlay" class="overlay"></div>
+
+    <div class="flex h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <div id="mobileMenu" class="mobile-menu fixed lg:static w-64 bg-white shadow-md flex flex-col h-full z-50">
+            <div class="p-6 flex-1">
+                <div class="flex items-center space-x-3 mb-8">
+                    <i class="fas fa-graduation-cap text-2xl text-blue-600"></i>
+                    <h2 class="text-2xl font-bold text-blue-600">Student Panel</h2>
+                </div>
+                <nav class="space-y-2">
+                    <a href="student_dashboard.php" class="sidebar-item flex items-center space-x-3 text-blue-600 bg-blue-100 p-3 rounded-lg font-semibold">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="profile.php" class="sidebar-item flex items-center space-x-3 text-gray-700 hover:bg-blue-100 hover:text-blue-600 p-3 rounded-lg">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </nav>
+            </div>
+            <div class="p-6 border-t border-gray-200">
+                <a href="../logout.php" class="sidebar-item flex items-center space-x-3 text-red-600 hover:bg-red-100 hover:text-red-800 p-3 rounded-lg">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div class="container mx-auto">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">
+                    <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 mb-4 lg:mb-0">Welcome, Student #<?php echo htmlspecialchars($student_id); ?></h1>
+                    
+                    <!-- Notifications and Profile Icons -->
+                    <div class="flex items-center space-x-4">
+                        <div class="relative" id="notificationBellContainer">
+                            <i class="fas fa-bell text-gray-600 text-xl cursor-pointer" id="notificationBell"></i>
+                            <?php if ($unread_count > 0): ?>
+                                <span class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"><?php echo $unread_count; ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="text-xl lg:text-2xl font-semibold text-gray-700 mb-4">Your Assigned Exams</h2>
+
+                <?php if ($assigned_exams_result->num_rows > 0): ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                        <?php while ($exam = $assigned_exams_result->fetch_assoc()): ?>
+                            <div class="bg-white rounded-lg shadow-md p-4 lg:p-6 flex flex-col">
+                                <h3 class="text-lg lg:text-xl font-semibold text-gray-800 mb-2"><?php echo htmlspecialchars($exam['title']); ?></h3>
+                                <p class="text-gray-600 mb-4 flex-1"><?php echo nl2br(htmlspecialchars($exam['description'])); ?></p>
+                                <div class="flex flex-wrap items-center text-gray-500 text-sm mb-4 gap-4">
+                                    <span><i class="far fa-calendar-alt mr-1"></i> Due: <?php echo date('F j, Y', strtotime($exam['due_date'])); ?></span>
+                                    <span><i class="far fa-clock mr-1"></i> Duration: <?php echo $exam['duration_minutes']; ?> minutes</span>
+                                    <span><i class="fas fa-question-circle mr-1"></i> Questions: <?php echo $exam['question_count']; ?></span>
+                                </div>
+
+                                <?php
+                                // Check if student has already attempted this exam
+                                $attempt_check_sql = "SELECT * FROM exam_attempts WHERE student_id = ? AND exam_id = ?";
+                                $attempt_check_stmt = $conn->prepare($attempt_check_sql);
+                                $attempt_check_stmt->bind_param("ii", $student_id, $exam['id']);
+                                $attempt_check_stmt->execute();
+                                $attempt_check_result = $attempt_check_stmt->get_result();
+
+                                if ($attempt_check_result->num_rows > 0) {
+                                    $attempt = $attempt_check_result->fetch_assoc();
+                                    if ($attempt['completed_at']) {
+                                        // Exam completed, show result
+                                        echo '<a href="exam_result.php?exam_id=' . $exam['id'] . '" class="inline-block bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200"><i class="fas fa-poll mr-2"></i>View Result</a>';
+                                    } else {
+                                        // Exam started but not completed
+                                        echo '<a href="take_exam.php?exam_id=' . $exam['id'] . '" class="inline-block bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition duration-200"><i class="fas fa-play-circle mr-2"></i>Continue Exam</a>';
+                                    }
+                                } else {
+                                    // Exam not attempted yet
+                                    echo '<a href="take_exam.php?exam_id=' . $exam['id'] . '" class="inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200"><i class="fas fa-pencil-alt mr-2"></i>Take Exam</a>';
+                                }
+                                $attempt_check_stmt->close();
+                                ?>
+                            </div>
+                        <?php endwhile; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-gray-600">No exams assigned to you yet.</p>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
-  </div>
-</nav>
 
-<main>
-  <h1>Welcome, Student #<?php echo htmlspecialchars($student_id); ?></h1>
-  <h2>Your Assigned Exams</h2>
-
-  <?php if ($assigned_exams_result->num_rows > 0): ?>
-      <?php while ($exam = $assigned_exams_result->fetch_assoc()): ?>
-          <div class="exam">
-              <h3><?php echo htmlspecialchars($exam['title']); ?></h3>
-              <p><?php echo nl2br(htmlspecialchars($exam['description'])); ?></p>
-              <div class="exam-info">
-                  <small>Due: <?php echo date('F j, Y', strtotime($exam['due_date'])); ?></small>
-                  <small>Duration: <?php echo $exam['duration_minutes']; ?> minutes</small>
-                  <small>Questions: <?php echo $exam['question_count']; ?></small>
-              </div>
-              
-              <?php
-              // Check if student has already attempted this exam
-              $attempt_check_sql = "SELECT * FROM exam_attempts WHERE student_id = ? AND exam_id = ?";
-              $attempt_check_stmt = $conn->prepare($attempt_check_sql);
-              $attempt_check_stmt->bind_param("ii", $student_id, $exam['id']);
-              $attempt_check_stmt->execute();
-              $attempt_check_result = $attempt_check_stmt->get_result();
-              
-              if ($attempt_check_result->num_rows > 0) {
-                  $attempt = $attempt_check_result->fetch_assoc();
-                  if ($attempt['completed_at']) {
-                      // Exam completed, show result
-                      echo '<a href="exam_result.php?exam_id=' . $exam['id'] . '" class="view-result-btn">View Result</a>';
-                  } else {
-                      // Exam started but not completed
-                      echo '<a href="take_exam.php?exam_id=' . $exam['id'] . '" class="continue-btn">Continue Exam</a>';
-                  }
-              } else {
-                  // Exam not attempted yet
-                  echo '<a href="take_exam.php?exam_id=' . $exam['id'] . '" class="take-exam-btn">Take Exam</a>';
-              }
-              $attempt_check_stmt->close();
-              ?>
-          </div>
-      <?php endwhile; ?>
-  <?php else: ?>
-      <p>No exams assigned to you yet.</p>
-  <?php endif; ?>
-</main>
-
-<!-- Notification Modal -->
-<div class="modal" id="notificationModal" tabindex="-1" role="dialog" aria-labelledby="notificationModalLabel" aria-hidden="true">
-  <div class="modal-content">
-    <button class="close-btn" id="closeModal">&times;</button>
-    <h2 id="notificationModalLabel">Notifications</h2>
-    <button id="markAllReadBtn">Mark all as read</button>
-    <div id="notificationContent">
-      <?php if (empty($all_notifications)): ?>
-        <p>No notifications.</p>
-      <?php else: ?>
-        <?php foreach ($all_notifications as $notif): ?>
-          <div class="notification-item <?php echo $notif['is_read'] ? 'read' : 'unread'; ?>" 
-               data-id="<?php echo $notif['id']; ?>"
-               onclick="handleNotificationClick(this)">
-            <h3><?php echo htmlspecialchars($notif['exam_title']); ?></h3>
-            <p><?php echo htmlspecialchars($notif['message']); ?></p>
-            <small><?php echo date('F j, Y g:i A', strtotime($notif['created_at'])); ?></small>
-          </div>
-        <?php endforeach; ?>
-      <?php endif; ?>
+    <!-- Notification Modal -->
+    <div class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 hidden" id="notificationModal">
+        <div class="bg-white rounded-lg shadow-xl p-4 lg:p-6 w-full max-w-md mx-4 relative">
+            <button class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl" id="closeModal">&times;</button>
+            <h2 class="text-xl lg:text-2xl font-bold text-gray-800 mb-4">Notifications</h2>
+            <button id="markAllReadBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 mb-4"><i class="fas fa-check-double mr-2"></i>Mark all as read</button>
+            <div id="notificationContent" class="space-y-3 max-h-64 overflow-y-auto">
+                <?php if (empty($all_notifications)): ?>
+                    <p class="text-gray-600">No notifications.</p>
+                <?php else: ?>
+                    <?php foreach ($all_notifications as $notif): ?>
+                        <div class="notification-item p-3 rounded-md cursor-pointer transition duration-200 <?php echo $notif['is_read'] ? 'bg-gray-100' : 'bg-blue-50 border-l-4 border-blue-500'; ?>" 
+                             data-id="<?php echo $notif['id']; ?>"
+                             onclick="handleNotificationClick(this)">
+                            <h3 class="text-base lg:text-lg font-semibold text-gray-800"><?php echo htmlspecialchars($notif['exam_title']); ?></h3>
+                            <p class="text-gray-600 text-sm mb-1"><?php echo htmlspecialchars($notif['message']); ?></p>
+                            <small class="text-gray-500 text-xs"><?php echo date('F j, Y g:i A', strtotime($notif['created_at'])); ?></small>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<script>
-// Prepare notification exams data from PHP to JS
-const notificationExams = <?php
-    $notif_exams = [];
-    while ($row = $notif_exams_result->fetch_assoc()) {
-        $notif_exams[] = $row;
-    }
-    echo json_encode($notif_exams);
-?>;
+    <script>
+        // Prepare notification exams data from PHP to JS (kept for potential future use if needed elsewhere)
+        const notificationExams = <?php
+            $notif_exams = [];
+            // Reset result pointer to re-fetch for JS if needed
+            if ($notif_exams_result->num_rows > 0) {
+                 $notif_exams_result->data_seek(0);
+                 while ($row = $notif_exams_result->fetch_assoc()) {
+                     $notif_exams[] = $row;
+                 }
+            }
+            echo json_encode($notif_exams);
+        ?>;
 
-const notificationBell = document.getElementById('notificationBell');
-const notificationModal = document.getElementById('notificationModal');
-const notificationContent = document.getElementById('notificationContent');
-const closeModalBtn = document.getElementById('closeModal');
+        const notificationBell = document.getElementById('notificationBell');
+        const notificationModal = document.getElementById('notificationModal');
+        const closeModalBtn = document.getElementById('closeModal');
 
-// Show modal and populate notifications
-notificationBell.addEventListener('click', () => {
-  // The notifications are already populated in the PHP section
-  notificationModal.style.display = 'block';
-  notificationModal.focus();
-});
+        // Show modal
+        notificationBell.addEventListener('click', () => {
+          notificationModal.classList.remove('hidden');
+        });
 
-// Close modal on close button
-closeModalBtn.addEventListener('click', () => {
-  notificationModal.style.display = 'none';
-});
+        // Close modal on close button
+        closeModalBtn.addEventListener('click', () => {
+          notificationModal.classList.add('hidden');
+        });
 
-// Close modal on click outside modal box
-window.addEventListener('click', (e) => {
-  if (e.target === notificationModal) {
-    notificationModal.style.display = 'none';
-  }
-});
+        // Close modal on click outside modal box
+        window.addEventListener('click', (e) => {
+          if (e.target === notificationModal) {
+            notificationModal.classList.add('hidden');
+          }
+        });
 
-// Profile dropdown toggle
-const profileIcon = document.getElementById('profileIcon');
-const profileDropdown = document.getElementById('profileDropdown');
-profileIcon.addEventListener('click', () => {
-  profileIcon.classList.toggle('profile-active');
-});
-window.addEventListener('click', e => {
-  if (!profileIcon.contains(e.target)) {
-    profileIcon.classList.remove('profile-active');
-  }
-});
+        // Handle notification clicks
+        function handleNotificationClick(element) {
+            if (!element.classList.contains('bg-gray-100')) { // Check if not already read
+                const notificationId = element.dataset.id;
+                const formData = new FormData();
+                formData.append('notification_id', notificationId);
 
-// Handle notification clicks
-function handleNotificationClick(element) {
-    if (!element.classList.contains('read')) {
-        const formData = new FormData();
-        formData.append('notification_id', element.dataset.id);
+                fetch('mark_notification_read.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update the notification item's appearance
+                        element.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+                        element.classList.add('bg-gray-100');
+                        
+                        // Update badge count
+                        const badge = document.querySelector('#notificationBellContainer .bg-red-500');
+                        if (badge) {
+                            const currentCount = parseInt(badge.textContent);
+                            if (currentCount > 1) {
+                                badge.textContent = currentCount - 1;
+                            } else {
+                                badge.remove();
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
 
-        fetch('mark_notification_read.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update the notification item's appearance
-                element.classList.remove('unread');
-                element.classList.add('read');
-                
-                // Update badge count
-                const badge = document.querySelector('.badge');
-                if (badge) {
-                    const currentCount = parseInt(badge.textContent);
-                    if (currentCount > 1) {
-                        badge.textContent = currentCount - 1;
-                    } else {
+        document.getElementById('markAllReadBtn').addEventListener('click', function() {
+            const formData = new FormData();
+            formData.append('mark_all', '1');
+
+            fetch('mark_notification_read.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mark all notification items as read
+                    document.querySelectorAll('#notificationContent .notification-item').forEach(item => {
+                         item.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+                         item.classList.add('bg-gray-100');
+                    });
+                    
+                    // Remove the notification badge
+                    const badge = document.querySelector('#notificationBellContainer .bg-red-500');
+                    if (badge) {
                         badge.remove();
                     }
                 }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
-}
-
-document.getElementById('markAllReadBtn').addEventListener('click', function() {
-    const formData = new FormData();
-    formData.append('mark_all', '1');
-
-    fetch('mark_notification_read.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mark all notification items as read
-            document.querySelectorAll('.notification-item.unread').forEach(item => {
-                item.classList.remove('unread');
-                item.classList.add('read');
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
-            
-            // Remove the notification badge
-            const badge = document.querySelector('.badge');
-            if (badge) {
-                badge.remove();
-            }
+        });
+
+        // Add mobile menu functionality
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('overlay');
+
+        function toggleMobileMenu() {
+            mobileMenu.classList.toggle('active');
+            overlay.classList.toggle('active');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-});
-</script>
+
+        mobileMenuButton.addEventListener('click', toggleMobileMenu);
+        overlay.addEventListener('click', toggleMobileMenu);
+    </script>
 
 </body>
 </html>

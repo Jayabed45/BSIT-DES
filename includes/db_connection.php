@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$db = 'bsit_exam_system';
+$db = 'bsit_exam_system_main';
 $user = 'root';
 $pass = ''; // Update if your MySQL password is not empty
 
